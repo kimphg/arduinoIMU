@@ -1,14 +1,11 @@
 //Arduino 1.0+ only
 
 #include <Wire.h>
-
-#define CTRL_REG1 0x20
-#define CTRL_REG2 0x21
-#define CTRL_REG3 0x22
-#define CTRL_REG4 0x23
-#define CTRL_REG5 0x24
-#define NUM_MES 3
-int L3G4200D_Address = 105; //I2C address of the L3G4200D
+#include "mma8451.h"
+#include "l3d.h"
+#define NUM_MES 10
+//todo: show led
+//toto measure acceleration
 int setupL3G4200D(int scale);
 int xCur=0,xOld;
 long int sumx = 0,sumMesX=0;
@@ -26,8 +23,8 @@ void setup(){
   Serial.begin(500000);
   setupL3G4200D(500); // Configure L3G4200  - 250, 500 or 2000 deg/sec
   delay(1500); //wait for the sensor to be ready 
-  //calib1();
-  //calib2();
+  calib1();
+  calib2();
   Serial.println("starting up L3G4200D");
 }
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
@@ -36,9 +33,9 @@ void loop(){
    yOld = yCur;
    zOld = zCur;
    getGyroValues();  // This will update x, y, and z with new values
-   int xMin = xCur;//minAbs(xOld , xCur);
-   int yMin = yCur;//minAbs(yOld , yCur);
-   int zMin = zCur;//minAbs(zOld , zCur);
+   int xMin = minAbs(xOld , xCur);
+   int yMin = minAbs(yOld , yCur);
+   int zMin = minAbs(zOld , zCur);
    sumx+=xMin;
    sumy+=yMin;
    sumz+=zMin;
@@ -47,9 +44,7 @@ void loop(){
     unsigned int mesX = sumx/NUM_MES;
     unsigned int mesY = sumy/NUM_MES;
     unsigned int mesZ = sumz/NUM_MES;
-    xMean+=mesX/2000.0;
-    yMean+=mesY/2000.0;
-    zMean+=mesZ/2000.0;
+    
     datagram[1]=mesX>>8;
     datagram[2]=mesX;
     datagram[3]=mesY>>8;
@@ -165,70 +160,41 @@ void calib2()
   }
 void getGyroValues(){
 
-  byte xMSB = readRegister(L3G4200D_Address, 0x29);
-  byte xLSB = readRegister(L3G4200D_Address, 0x28);
+  byte xMSB = readRegister(L3G4200D_ADDRESS, 0x29);
+  byte xLSB = readRegister(L3G4200D_ADDRESS, 0x28);
   
   xCur = (((xMSB << 8) | xLSB)-xMean+0.5);
 
-  byte yMSB = readRegister(L3G4200D_Address, 0x2B);
-  byte yLSB = readRegister(L3G4200D_Address, 0x2A);
+  byte yMSB = readRegister(L3G4200D_ADDRESS, 0x2B);
+  byte yLSB = readRegister(L3G4200D_ADDRESS, 0x2A);
   yCur = (((yMSB << 8) | yLSB)-yMean+0.5);
 
-  byte zMSB = readRegister(L3G4200D_Address, 0x2D);
-  byte zLSB = readRegister(L3G4200D_Address, 0x2C);
+  byte zMSB = readRegister(L3G4200D_ADDRESS, 0x2D);
+  byte zLSB = readRegister(L3G4200D_ADDRESS, 0x2C);
   zCur = (((zMSB << 8) | zLSB)+0.5-zMean);
   mesCount +=1;
 }
+void readMMA8451(void) {
+  // read x y z at once
+  Wire.beginTransmission(MMA8451_DEFAULT_ADDRESS);
+  i2cwrite(MMA8451_REG_OUT_X_MSB);
+  Wire.endTransmission(false); // MMA8451 + friends uses repeated start!!
 
-int setupL3G4200D(int scale){
-  //From  Jim Lindblom of Sparkfun's code
+  Wire.requestFrom(MMA8451_DEFAULT_ADDRESS, 6);
+  x = Wire.read(); x <<= 8; x |= Wire.read(); x >>= 2;
+  y = Wire.read(); y <<= 8; y |= Wire.read(); y >>= 2;
+  z = Wire.read(); z <<= 8; z |= Wire.read(); z >>= 2;
 
-  // Enable x, y, z and turn off power down:
-  writeRegister(L3G4200D_Address, CTRL_REG1, 0b01001111);//ODR=10(400), BW=11,PD =1, xyz = 111
 
-  // If you'd like to adjust/use the HPF, you can edit the line below to configure CTRL_REG2:
-  writeRegister(L3G4200D_Address, CTRL_REG2, 0b00001000);// HPF 0.1hz
+  uint8_t range = getRange();
+  uint16_t divider = 1;
+  if (range == MMA8451_RANGE_8_G) divider = 1024;
+  if (range == MMA8451_RANGE_4_G) divider = 2048;
+  if (range == MMA8451_RANGE_2_G) divider = 4096;
 
-  // Configure CTRL_REG3 to generate data ready interrupt on INT2
-  // No interrupts used on INT1, if you'd like to configure INT1
-  // or INT2 otherwise, consult the datasheet:
-  writeRegister(L3G4200D_Address, CTRL_REG3, 0b00001000);
+  x_g = (float)x / divider;
+  y_g = (float)y / divider;
+  z_g = (float)z / divider;
 
-  // CTRL_REG4 controls the full-scale range, among other things:
-
-  if(scale == 250){
-    writeRegister(L3G4200D_Address, CTRL_REG4, 0b00000000);
-  }else if(scale == 500){
-    writeRegister(L3G4200D_Address, CTRL_REG4, 0b00010000);
-  }else{
-    writeRegister(L3G4200D_Address, CTRL_REG4, 0b00110000);
-  }
-
-  // CTRL_REG5 controls high-pass filtering of outputs, use it
-  // if you'd like:
-  writeRegister(L3G4200D_Address, CTRL_REG5, 0b00000000);
 }
 
-void writeRegister(int deviceAddress, byte address, byte val) {
-    Wire.beginTransmission(deviceAddress); // start transmission to device 
-    Wire.write(address);       // send register address
-    Wire.write(val);         // send value to write
-    Wire.endTransmission();     // end transmission
-}
-
-int readRegister(int deviceAddress, byte address){
-
-    int v;
-    Wire.beginTransmission(deviceAddress);
-    Wire.write(address); // register to read
-    Wire.endTransmission();
-
-    Wire.requestFrom(deviceAddress, 1); // read a byte
-
-    while(!Wire.available()) {
-        // waiting
-    }
-
-    v = Wire.read();
-    return v;
-}
