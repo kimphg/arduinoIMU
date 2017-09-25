@@ -6,7 +6,7 @@
 #define NUM_MES 10
 //todo: show led
 //toto measure acceleration
-int setupL3G4200D(int scale);
+
 int xCur=0,xOld;
 long int sumx = 0,sumMesX=0;
 int yCur=0,yOld;
@@ -18,7 +18,8 @@ double yVar, yMean=0;
 double zVar, zMean=0;
 int mesCount =0;
 void setup(){
-
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
   Wire.begin();
   Serial.begin(500000);
   setupL3G4200D(500); // Configure L3G4200  - 250, 500 or 2000 deg/sec
@@ -26,6 +27,7 @@ void setup(){
   calib1();
   calib2();
   Serial.println("starting up L3G4200D");
+  digitalWrite(LED_BUILTIN, LOW);
 }
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
 void loop(){
@@ -51,12 +53,13 @@ void loop(){
     datagram[4]=mesY;
     datagram[5]=mesZ>>8;
     datagram[6]=mesZ;
-    Serial.write(datagram,8);
+    //Serial.write(datagram,8);
     //
     mesCount = 0;
     sumx = 0;
     sumy = 0;
     sumz = 0;
+    readMMA8451();
   }
     
 }
@@ -181,20 +184,26 @@ void readMMA8451(void) {
   Wire.endTransmission(false); // MMA8451 + friends uses repeated start!!
 
   Wire.requestFrom(MMA8451_DEFAULT_ADDRESS, 6);
-  x = Wire.read(); x <<= 8; x |= Wire.read(); x >>= 2;
-  y = Wire.read(); y <<= 8; y |= Wire.read(); y >>= 2;
-  z = Wire.read(); z <<= 8; z |= Wire.read(); z >>= 2;
+  int x = Wire.read(); x <<= 8; x |= Wire.read(); x >>= 2;
+  int y = Wire.read(); y <<= 8; y |= Wire.read(); y >>= 2;
+  int z = Wire.read(); z <<= 8; z |= Wire.read(); z >>= 2;
 
+  
+//  uint8_t range = getRange();
+  uint16_t divider = 2048;
+//  if (range == MMA8451_RANGE_8_G) divider = 1024;
+//  if (range == MMA8451_RANGE_4_G) divider = 2048;
+//  if (range == MMA8451_RANGE_2_G) divider = 4096;
 
-  uint8_t range = getRange();
-  uint16_t divider = 1;
-  if (range == MMA8451_RANGE_8_G) divider = 1024;
-  if (range == MMA8451_RANGE_4_G) divider = 2048;
-  if (range == MMA8451_RANGE_2_G) divider = 4096;
-
-  x_g = (float)x / divider;
-  y_g = (float)y / divider;
-  z_g = (float)z / divider;
-
+  float x_g = (float)x ;// divider;
+  float y_g = (float)y ;// divider;
+  float z_g = (float)z ;// divider;
+  
+  Serial.print("x_g:");
+  Serial.println(x_g);
+  Serial.print("y_g:");
+  Serial.println(y_g);
+  Serial.print("z_g:");
+  Serial.println(z_g);
 }
 
