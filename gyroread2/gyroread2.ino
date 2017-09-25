@@ -1,11 +1,13 @@
 //Arduino 1.0+ only
 
 #include <Wire.h>
-#include "mma8451.h"
+#include <Adafruit_MMA8451.h>
+#include <Adafruit_Sensor.h>
 #include "l3d.h"
 #define NUM_MES 10
 //todo: show led
 //toto measure acceleration
+Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
 int xCur=0,xOld;
 long int sumx = 0,sumMesX=0;
@@ -28,9 +30,30 @@ void setup(){
   calib2();
   Serial.println("starting up L3G4200D");
   digitalWrite(LED_BUILTIN, LOW);
+  if (! mma.begin(0x1C)) {
+    Serial.println("Could not start MMA");
+    while (1);
+  }
+  Serial.println("MMA8451 found!");
+ 
+  mma.setRange(MMA8451_RANGE_2_G);
+  mma.setDataRate(0);//800hz
 }
+
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
 void loop(){
+   mma.read();
+//  Serial.print("X:\t"); Serial.print(mma.x); 
+//  Serial.print("\tY:\t"); Serial.print(mma.y); 
+//  Serial.print("\tZ:\t"); Serial.print(mma.z); 
+//  Serial.println();
+//chong diem ky di
+//gui gia tri len mt
+   double roll = atan(mma.y/ (double)mma.z);
+   double pitch = atan(mma.x/ (double)mma.z);
+   Serial.print("Roll:\t"); Serial.print(roll); 
+   Serial.print("Pitch:\t"); Serial.print(pitch); 
+   Serial.println();
    xOld = xCur;
    yOld = yCur;
    zOld = zCur;
@@ -46,20 +69,18 @@ void loop(){
     unsigned int mesX = sumx/NUM_MES;
     unsigned int mesY = sumy/NUM_MES;
     unsigned int mesZ = sumz/NUM_MES;
-    
     datagram[1]=mesX>>8;
     datagram[2]=mesX;
     datagram[3]=mesY>>8;
     datagram[4]=mesY;
     datagram[5]=mesZ>>8;
     datagram[6]=mesZ;
-    //Serial.write(datagram,8);
+    Serial.write(datagram,8);
     //
     mesCount = 0;
     sumx = 0;
     sumy = 0;
     sumz = 0;
-    readMMA8451();
   }
     
 }
@@ -176,34 +197,5 @@ void getGyroValues(){
   byte zLSB = readRegister(L3G4200D_ADDRESS, 0x2C);
   zCur = (((zMSB << 8) | zLSB)+0.5-zMean);
   mesCount +=1;
-}
-void readMMA8451(void) {
-  // read x y z at once
-  Wire.beginTransmission(MMA8451_DEFAULT_ADDRESS);
-  i2cwrite(MMA8451_REG_OUT_X_MSB);
-  Wire.endTransmission(false); // MMA8451 + friends uses repeated start!!
-
-  Wire.requestFrom(MMA8451_DEFAULT_ADDRESS, 6);
-  int x = Wire.read(); x <<= 8; x |= Wire.read(); x >>= 2;
-  int y = Wire.read(); y <<= 8; y |= Wire.read(); y >>= 2;
-  int z = Wire.read(); z <<= 8; z |= Wire.read(); z >>= 2;
-
-  
-//  uint8_t range = getRange();
-  uint16_t divider = 2048;
-//  if (range == MMA8451_RANGE_8_G) divider = 1024;
-//  if (range == MMA8451_RANGE_4_G) divider = 2048;
-//  if (range == MMA8451_RANGE_2_G) divider = 4096;
-
-  float x_g = (float)x ;// divider;
-  float y_g = (float)y ;// divider;
-  float z_g = (float)z ;// divider;
-  
-  Serial.print("x_g:");
-  Serial.println(x_g);
-  Serial.print("y_g:");
-  Serial.println(y_g);
-  Serial.print("z_g:");
-  Serial.println(z_g);
 }
 
