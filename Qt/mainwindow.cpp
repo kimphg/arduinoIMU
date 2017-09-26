@@ -30,7 +30,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
 void MainWindow::on_pushButtonStart_clicked()
 {
-    serial.setPortName("COM12");
+    serial.setPortName("COM6");
     serial.setBaudRate(500000);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
@@ -82,48 +82,35 @@ void MainWindow::processSerialData()
     unsigned char* pData = (unsigned char *)data.data();
 
     int i = data.size()-1;
-    if(i<7)return;
-    while(i>=7)
+    if(i<13)return;
+    while(i>=13)
     {
-        if(pData[i]==0xCC&&pData[i-7]==0xAA)
+        if(pData[i]==0xCC&&pData[i-13]==0xAA)
         {
+            i-=12;
             graphIndex++;
-            if(isIntegrate)
-            {
-                if(graphIndex>=MAX_GRAPH_INDEX)graphIndex = 0;
-                //read x
-                int value=  (pData[i-6]<<8)|pData[i-5];
-                if(value>>15)value = value-0xFFFF;
-                gx+=value;
-                gyroX[graphIndex] =gx;
-                //read y
-                value =  (pData[i-4]<<8)|pData[i-3];
-                if(value>>15)value = value-0xFFFF;
-                gy+=value;
-                gyroY[graphIndex] =gy;
-                //read z
-                value =  (pData[i-2]<<8)|pData[i-1];
-                if(value>>15)value = value-0xFFFF;
-                gz+=value;
-                gyroZ[graphIndex] =gz;
-            }
-            else
-            {
-                if(graphIndex>=MAX_GRAPH_INDEX)graphIndex = 0;
+            int offset=i;
+            if(isIntegrate)offset+=6;
+            if(graphIndex>=MAX_GRAPH_INDEX)graphIndex = 0;
+            //read x
+            int value=  (pData[offset]<<8)|pData[offset+1];
+            if(value>>15)value = value-0xFFFF;
+            gx=value;
+            gyroX[graphIndex] =gx;
+            //read y
+            value =  (pData[offset+2]<<8)|pData[offset+3];
+            if(value>>15)value = value-0xFFFF;
+            gy=value;
+            gyroY[graphIndex] =gy;
+            //read z
+            value =  (pData[offset+4]<<8)|pData[offset+5];
+            if(value>>15)value = value-0xFFFF;
+            gz=value;
+            gyroZ[graphIndex] =gz;
 
-                gx =  (pData[i-6]<<8)|pData[i-5];
-                if(gx>>15)gx = gx-0xFFFF;
-                gyroX[graphIndex] =gx;
-                gy =  (pData[i-4]<<8)|pData[i-3];
-                if(gy>>15)gy = gy-0xFFFF;
-                gyroY[graphIndex] =gy;
-                gz =  (pData[i-2]<<8)|pData[i-1];
-                if(gz>>15)gz = gz-0xFFFF;
-                gyroZ[graphIndex] =gz;
-            }
             update();
             mesCount++;
-            i-=6;
+
         }
         i--;
     }

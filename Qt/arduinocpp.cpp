@@ -1,15 +1,12 @@
-#include <Servo.h>
-
 //Arduino 1.0+ only
-#define EDIT_BY_QT
+//#define EDIT_BY_QT
 #ifdef EDIT_BY_QT
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
-#include "libs/l3d.h"
-#define GYRO_SUM 1
+#include <l3d.h>
+#define GYRO_SUM 3
 #define ACC_SUM 5
-Servo myservo;
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 struct value_t
 {
@@ -23,9 +20,9 @@ struct sensor_data_t
   float x,y,z;
 }sensorData;
 value_t gyrox,gyroy,gyroz,accx,accy,accz;
-float  gyroxOffset=-22.86;
-float  gyroyOffset=-65.33;
-float  gyrozOffset=105.97;
+double  gyroxOffset=0;
+double  gyroyOffset=0;
+double  gyrozOffset=0;
 int gyroSumCounter =0;
 int accSumCounter =0;
 void setup(){
@@ -35,7 +32,7 @@ void setup(){
   Serial.begin(500000);
   setupL3G4200D(500); // Configure L3G4200  - 250, 500 or 2000 deg/sec
   delay(1500); //wait for the sensors to be ready
-  //calibGyro();
+  calibGyro();
   Serial.println("starting up L3G4200D");
   digitalWrite(LED_BUILTIN, LOW);
   if (! mma.begin(0x1C)) {
@@ -45,7 +42,7 @@ void setup(){
   Serial.println("MMA8451 found!");
 
   mma.setRange(MMA8451_RANGE_2_G);
-  mma.setDataRate(MMA8451_DATARATE_800_HZ);//800hz
+  mma.setDataRate(0);//800hz
 }
 
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -80,12 +77,12 @@ void readSensors()
         datagram[11]=zAcc>>8;
         datagram[12]=zAcc;
         accSumCounter = 0;
-        Serial.write(datagram,14);
         accx.sum = 0;
         accy.sum = 0;
         accz.sum = 0;
         //save sensor data
-        
+        sensorData.x = atan(yAcc/zAcc);
+        sensorData.y = atan(xAcc/zAcc);
     }
     //read gyro
     gyrox.old = gyrox.curr;
@@ -110,20 +107,20 @@ void readSensors()
         datagram[4]=yGyro;
         datagram[5]=zGyro>>8;
         datagram[6]=zGyro;
-        Serial.write(datagram,14);
+        //Serial.write(datagram,8);
         //
         gyroSumCounter = 0;
         gyrox.sum = 0;
         gyroy.sum = 0;
         gyroz.sum = 0;
-        
+
     }
 
 }
 inline int minAbs(int a,int b)
 {
-  
-  return (abs(a)<abs(b))?a:b;
+
+  return (abs(a)>abs(b))?a:b;
 }
 #define CALIB_MAX_COUNT 300.0
 void calibGyro()
