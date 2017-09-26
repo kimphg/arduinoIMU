@@ -40,18 +40,32 @@ void setup(){
   digitalWrite(LED_BUILTIN, LOW);
   if (! mma.begin(0x1C)) {
     Serial.println("Could not start MMA");
-    while (1);
+    //while (1);
   }
   Serial.println("MMA8451 found!");
 
   mma.setRange(MMA8451_RANGE_2_G);
   mma.setDataRate(MMA8451_DATARATE_800_HZ);//800hz
+  //myservo.attach(9);
+  //pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(9, OUTPUT);
+  digitalWrite(10,HIGH);
+  digitalWrite(11,LOW);
 }
 
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,
                  0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
 void loop(){
-    readSensors();
+  //delay(1);
+  digitalWrite(9,LOW);
+  digitalWrite(LED_BUILTIN,LOW);
+  //delay(1);
+  digitalWrite(9,HIGH);
+  digitalWrite(LED_BUILTIN,HIGH);
+    //readSensors();
+    //myservo.write(1000);
 }
 void readSensors()
 {
