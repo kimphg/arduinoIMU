@@ -32,6 +32,7 @@ void setup(){
   digitalWrite(LED_BUILTIN, HIGH);
   Wire.begin();
   Serial.begin(500000);
+  Serial1.begin(115200);
   setupL3G4200D(500); // Configure L3G4200  - 250, 500 or 2000 deg/sec
   delay(1500); //wait for the sensors to be ready
   //calibGyro();
@@ -50,17 +51,23 @@ void setup(){
   pinMode(10, OUTPUT);
   pinMode(11, OUTPUT);
   pinMode(9, OUTPUT);
+  pinMode(8, OUTPUT);
   digitalWrite(10,HIGH);
   digitalWrite(11,LOW);
+  digitalWrite(8,HIGH);
 }
 
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,
                  0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
+float cP =1,cD = 1,cI = 1; 
 void loop(){
    readSensors();
+   float pitch = atan(mma.x/(float)mma.z);
   float yControl = 0;
-  //yControl+=
-  tone(9,65535);
+  yControl+=cP*(pitch)-gyroy.curr/3754.9;//3754.9 = 32768.0*500/57.3;
+  //tone(9,65535);
+  Serial.print(yControl);
+  Serial1.print(yControl);
    
 
 }
