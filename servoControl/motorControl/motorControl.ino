@@ -1,5 +1,6 @@
 void setup() {
-    int timeValue = analogRead(A0);
+    DDRB = B00111111;
+    //int timeValue = analogRead(A0);
     cli();//stop interrupts
     
     //set timer0 interrupt at 2kHz
@@ -70,11 +71,14 @@ ISR(TIMER0_COMPA_vect){//timer0 interrupt  toggles pin 8
 ISR(TIMER1_COMPA_vect){//timer1 interrupt  toggles pin 13 (LED)
 //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
   if (toggle1){
-    digitalWrite(13,HIGH);
+    //digitalWrite(13,HIGH);
+    PORTB = B101010;
+    
     toggle1 = 0;
   }
   else{
-    digitalWrite(13,LOW);
+    //digitalWrite(13,LOW);
+    PORTB = B010101;
     toggle1 = 1;
   }
 }
