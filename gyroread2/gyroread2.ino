@@ -1,4 +1,3 @@
-#include <Servo.h>
 
 //Arduino 1.0+ only
 #define EDIT_BY_QT
@@ -9,7 +8,7 @@
 #include "libs/l3d.h"
 #define GYRO_SUM 1
 #define ACC_SUM 5
-Servo myservo;
+
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 struct value_t
 {
@@ -58,26 +57,24 @@ void setup(){
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,
                  0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
 void loop(){
-  //delay(1);
-  digitalWrite(9,LOW);
-  digitalWrite(LED_BUILTIN,LOW);
-  //delay(1);
-  digitalWrite(9,HIGH);
-  digitalWrite(LED_BUILTIN,HIGH);
-    //readSensors();
-    //myservo.write(1000);
+   readSensors();
+  float yControl = 0;
+  //yControl+=
+  tone(9,65535);
+   
+
 }
 void readSensors()
 {
     //read acceleration
-    accx.old = accx.curr;
-    accy.old = accy.curr;
-    accz.old = accz.curr;
+//    accx.old = accx.curr;
+//    accy.old = accy.curr;
+//    accz.old = accz.curr;
     mma.read();
-    accx.curr = mma.x;
-    accy.curr = mma.y;
-    accz.curr = mma.z;
-    accx.sum +=  accx.curr;
+//    accx.curr = mma.x;
+//    accy.curr = mma.y;
+//    accz.curr = mma.z;
+    /*accx.sum +=  accx.curr;
     accy.sum +=  accy.curr;
     accz.sum +=  accz.curr;
     accSumCounter++;
@@ -100,13 +97,13 @@ void readSensors()
         accz.sum = 0;
         //save sensor data
         
-    }
+    }*/
     //read gyro
-    gyrox.old = gyrox.curr;
-    gyroy.old = gyroy.curr;
-    gyroz.old = gyroz.curr;
+//    gyrox.old = gyrox.curr;
+//    gyroy.old = gyroy.curr;
+//    gyroz.old = gyroz.curr;
     getGyroValues();
-    gyrox.sum += minAbs(gyrox.old , gyrox.curr);
+    /*gyrox.sum += minAbs(gyrox.old , gyrox.curr);
     gyroy.sum += minAbs(gyroy.old , gyroy.curr);
     gyroz.sum += minAbs(gyroz.old , gyroz.curr);
     gyroSumCounter++;
@@ -131,7 +128,7 @@ void readSensors()
         gyroy.sum = 0;
         gyroz.sum = 0;
         
-    }
+    }*/
 
 }
 inline int minAbs(int a,int b)
