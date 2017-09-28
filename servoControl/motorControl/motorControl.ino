@@ -17,13 +17,13 @@ void setup() {
 }
 void timer1Period(int twoMicro)
 {
-  TCCR1A = 0;// set entire TCCR1A register to 0
-      TCCR1B = 0;// same for TCCR1B
-      TCNT1  = 0;//initialize counter value to 0
+  TCCR5A = 0;// set entire TCCR1A register to 0
+      TCCR5B = 0;// same for TCCR1B
+      TCNT5  = 0;//initialize counter value to 0
       // set compare match register for 1hz increments
-      OCR1A =  twoMicro;//(16000000) / (hz*8) - 1 ;//(must be <65536)
+      OCR5A =  twoMicro;//(16000000) / (hz*8) - 1 ;//(must be <65536)
       // turn on CTC mode
-      TCCR1B |= (1 << WGM12);
+      TCCR5B |= (1 << WGM52);
       // Set CS10 and CS12 bits for 1024 prescaler
       TCCR1B |= 1<<CS10;
       //TCCR1B |= 1<<CS11;  
@@ -49,14 +49,13 @@ void loop() {
   if(dataFrame[0]==0xAA)
   {
     dataFrame[0] = 0;
-    myserial.readBytes(&value.binary[0],4);
-//    value.binary[0] = dataFrame[1];
-//    value.binary[1] = dataFrame[2];
-//    value.binary[2] = dataFrame[3];
-//    value.binary[3] = dataFrame[4];
-    //digitalWrite(13,HIGH);
+    myserial.readBytes(&dataFrame[1],13);
+    value.binary[0] = dataFrame[1];
+    value.binary[1] = dataFrame[2];
+    value.binary[2] = dataFrame[3];
+    value.binary[3] = dataFrame[4];
+    digitalWrite(13,HIGH);
     motorSpeed = value.value*3000;
-    Serial.println(motorSpeed);
     if(abs(motorSpeed)>255)
     {
       if(motorSpeed>0)motorSpeed = 255;
@@ -85,7 +84,7 @@ void loop() {
 //  OCR1A =  (256-abs(motorSpeed))*100;
 }
 
-ISR(TIMER1_COMPA_vect){//timer1 interrupt  toggles pin 13 (LED)
+ISR(TIMER5_COMPA_vect){//timer1 interrupt  toggles pin 13 (LED)
   
   PORTB |= B00000010;
   delayMicroseconds(3);//5ms = 2.5 sec/turn

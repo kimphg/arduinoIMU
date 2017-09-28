@@ -60,15 +60,15 @@ void setup(){
 }
 void timer1Period(int twoMicro)
 {
-  TCCR5A = 0;// set entire TCCR1A register to 0
+      TCCR5A = 0;// set entire TCCR1A register to 0
       TCCR5B = 0;// same for TCCR1B
       TCNT5  = 0;//initialize counter value to 0
       // set compare match register for 1hz increments
       OCR5A =  twoMicro;//(16000000) / (hz*8) - 1 ;//(must be <65536)
       // turn on CTC mode
-      TCCR5B |= (1 << WGM12);
+      TCCR5B |= (1 << WGM52);
       // Set CS10 and CS12 bits for 1024 prescaler
-      TCCR5B |= 1<<CS10;
+      TCCR5B |= 1<<CS50;
       //TCCR1B |= 1<<CS11;  
       // enable timer compare interrupt
       TIMSK5 |= (1 << OCIE5A);
