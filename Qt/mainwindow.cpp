@@ -8,6 +8,11 @@ int freqencyMes;
 int mesCount = 0;
 int gyroX[MAX_GRAPH_INDEX],gyroY[MAX_GRAPH_INDEX],gyroZ[MAX_GRAPH_INDEX];
 int graphIndex = 0;
+typedef union
+{
+  float value;
+  unsigned char binary[4];
+  }binary_float;
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -80,7 +85,7 @@ void MainWindow::processSerialData()
 {
     QByteArray data = serial.readAll();
     unsigned char* pData = (unsigned char *)data.data();
-
+    binary_float value;
     int i = data.size()-1;
     if(i<13)return;
     while(i>=13)
@@ -91,7 +96,14 @@ void MainWindow::processSerialData()
             graphIndex++;
             int offset=i;
             if(isIntegrate)offset+=6;
+            value.binary[0] = pData[offset];
+            value.binary[1] = pData[offset+1];
+            value.binary[2] = pData[offset+2];
+            value.binary[3] = pData[offset+3];
             if(graphIndex>=MAX_GRAPH_INDEX)graphIndex = 0;
+            gx=value.value*100;
+            gyroX[graphIndex] =gx;
+            /*
             //read x
             int value=  (pData[offset]<<8)|pData[offset+1];
             if(value>>15)value = value-0xFFFF;
@@ -107,7 +119,7 @@ void MainWindow::processSerialData()
             if(value>>15)value = value-0xFFFF;
             gz=value;
             gyroZ[graphIndex] =gz;
-
+*/
             update();
             mesCount++;
 

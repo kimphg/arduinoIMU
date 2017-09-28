@@ -1,14 +1,19 @@
+#include <SoftwareSerial.h>
+SoftwareSerial myserial(2,3);
 void setup() {
+  Serial.begin(115200);
+  myserial.begin(9600);
     DDRB = B00111111;
     digitalWrite(8,HIGH);
     digitalWrite(10,HIGH);
     digitalWrite(11,HIGH);
+    pinMode(13,OUTPUT);
+    digitalWrite(13,LOW);
+    
     //int timeValue = analogRead(A0);
     cli();//stop interrupts
-    timer1Period(100);//1= 2 microsec
+    timer1Period(25500);//1= 2 microsec
     sei();//allow interrupts
-  
-
 }
 void timer1Period(int twoMicro)
 {
@@ -25,36 +30,70 @@ void timer1Period(int twoMicro)
       // enable timer compare interrupt
       TIMSK1 |= (1 << OCIE1A);
   }
+int motorSpeed = -200;
+byte dataFrame[14];
+typedef union 
+{
+  float value;
+  byte binary[4];
+  }binary_float;
+binary_float value ;
 void loop() {
   // put your main code here, to run repeatedly:
+//  if(motorSpeed<200)motorSpeed+=10;else motorSpeed=-200;
+//  delay(500);
+
+  //digitalWrite(11,HIGH);
+  if(myserial.available())myserial.readBytes(dataFrame,1); else return;
   
+  if(dataFrame[0]==0xAA)
+  {
+    dataFrame[0] = 0;
+    myserial.readBytes(&value.binary[0],4);
+//    value.binary[0] = dataFrame[1];
+//    value.binary[1] = dataFrame[2];
+//    value.binary[2] = dataFrame[3];
+//    value.binary[3] = dataFrame[4];
+    //digitalWrite(13,HIGH);
+    motorSpeed = value.value*3000;
+    Serial.println(motorSpeed);
+    if(abs(motorSpeed)>255)
+    {
+      if(motorSpeed>0)motorSpeed = 255;
+      else motorSpeed = -255;
+      }
+    OCR1A =  (256-abs(motorSpeed))*100;
+  }
+  else
+  {
+    //digitalWrite(13,LOW);
+    //motorSpeed = 0;
+    
+  }
+  
+  if(motorSpeed>0)
+  {
+    digitalWrite(11,LOW);
+  }
+  else
+  {
+    digitalWrite(11,HIGH);
+    }
+//  if(motorSpeed<255)motorSpeed+=50;else motorSpeed=0;
+//  delay(2000);
+  
+//  OCR1A =  (256-abs(motorSpeed))*100;
 }
-bool toggle1;
-int count = 0;
-void delayClock()
-{}
+
 ISR(TIMER1_COMPA_vect){//timer1 interrupt  toggles pin 13 (LED)
   
   PORTB |= B00000010;
   delayMicroseconds(3);//5ms = 2.5 sec/turn
-  PORTB &= B11111101;
+  
+  if(motorSpeed)PORTB &= B11111101;
   
   return;
-//  count++;
-//  if(count<2)return;
-//  count =0;
-//  if(toggle1)
-//  {
-//    toggle1 = false;
-//    PORTB |= B00000010;
-//    //digitalWrite(9,HIGH);
-//  }
-//  else
-//  {
-//    toggle1 = true;
-//    PORTB &= B11111101;
-//    //digitalWrite(9,LOW);//PORTB = B1101;//|= B000010;
-//  }return;
+
 }
   
 
