@@ -8,7 +8,8 @@
 #include "libs/l3d.h"
 #define GYRO_SUM 1
 #define ACC_SUM 5
-
+#include <Servo.h>
+Servo myservo;
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 struct value_t
 {
@@ -42,11 +43,11 @@ void setup(){
     Serial.println("Could not start MMA");
     //while (1);
   }
-  Serial.println("MMA8451 found!");
+  else Serial.println("MMA8451 found!");
 
   mma.setRange(MMA8451_RANGE_2_G);
-  mma.setDataRate(MMA8451_DATARATE_800_HZ);//800hz
-  //myservo.attach(9);
+  mma.setDataRate(MMA8451_DATARATE_100_HZ);//800hz
+  myservo.attach(9);
   //pinMode(LED_BUILTIN, OUTPUT);
   pinMode(10, OUTPUT);
   pinMode(11, OUTPUT);
@@ -59,56 +60,35 @@ void setup(){
 
 byte datagram[]={0xAA,0x00,0x00,0x00,0x00,0x00,0x00,
                  0x00,0x00,0x00,0x00,0x00,0x00,0xCC};
-float cP =1,cD = 1,cI = 1; 
+float cP =0.0004,cD = 0.005,cI = 0.000001; 
+float pitch =0;
+float angle = 0;
 void loop(){
    readSensors();
-   float pitch = atan(mma.x/(float)mma.z);
-  float yControl = 0;
-  yControl+=cP*(pitch)-gyroy.curr/3754.9;//3754.9 = 32768.0*500/57.3;
+   //mma stabilization
+   if(mma.y==0)return;
+  pitch +=(atan(mma.x/(float)mma.y));
+  
+  angle+= gyroz.old*cI +(gyroz.curr)*cP+(gyroz.curr - gyroz.old)*cD+pitch/1000.0;
+  while(angle>180) angle = 180;
+  while(angle<0)angle = 0;
+  myservo.write(angle);
+ // yControl+=cP*(pitch)-gyroy.curr/3754.9;//3754.9 = 32768.0*500/57.3;
   //tone(9,65535);
-  Serial.print(yControl);
-  Serial1.print(yControl);
+  Serial.println(gyroz.curr);
+  //Serial1.print(yControl);
    
 
 }
 void readSensors()
 {
-    //read acceleration
-//    accx.old = accx.curr;
-//    accy.old = accy.curr;
-//    accz.old = accz.curr;
+
     mma.read();
-//    accx.curr = mma.x;
-//    accy.curr = mma.y;
-//    accz.curr = mma.z;
-    /*accx.sum +=  accx.curr;
-    accy.sum +=  accy.curr;
-    accz.sum +=  accz.curr;
-    accSumCounter++;
-    if (accSumCounter>=ACC_SUM)
-    {
-        //send sensor data
-        int xAcc = accx.sum/accSumCounter;
-        int yAcc = accy.sum/accSumCounter;
-        int zAcc = accz.sum/accSumCounter;
-        datagram[7]=xAcc>>8;
-        datagram[8]=xAcc;
-        datagram[9]=yAcc>>8;
-        datagram[10]=yAcc;
-        datagram[11]=zAcc>>8;
-        datagram[12]=zAcc;
-        accSumCounter = 0;
-        Serial.write(datagram,14);
-        accx.sum = 0;
-        accy.sum = 0;
-        accz.sum = 0;
-        //save sensor data
-        
-    }*/
+    
     //read gyro
-//    gyrox.old = gyrox.curr;
-//    gyroy.old = gyroy.curr;
-//    gyroz.old = gyroz.curr;
+    //gyrox.old = gyrox.curr;
+    //gyroy.old = gyroy.curr;
+    gyroz.old = gyroz.curr;
     getGyroValues();
     /*gyrox.sum += minAbs(gyrox.old , gyrox.curr);
     gyroy.sum += minAbs(gyroy.old , gyroy.curr);
