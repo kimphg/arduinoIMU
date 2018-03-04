@@ -10,23 +10,23 @@
 long time;
 bool Direction;
 
-StepperMicro stepper(5,6,7,8);
+StepperMicro stepper(10,16,14,15);
 void setup()
 {
 	Serial.begin(115200);
-	stepper.acc = 0.1;
+	//stepper.acc = 0.1;
 
 }
 void loop()
 {
 	if (stepper.speed >= 255)
 	{
-		stepper.acc = -0.005;
+		stepper.acc = -0.1;
 		Serial.println(stepper.speed);
 	}
 	if (stepper.speed <= -255)
 	{
-		stepper.acc = 0.005;
+		stepper.acc = 0.1;
 	}
 	stepper.Update();
 	
